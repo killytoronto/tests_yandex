@@ -1,1 +1,1467 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ТекстАИ 2.0 | Улучшенный анализ текста</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #5046e5;
+      --primary-light: #6e66ff;
+      --primary-dark: #4338ca;
+      --secondary: #10b981;
+      --secondary-light: #34d399;
+      --dark: #111827;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-400: #9ca3af;
+      --gray-500: #6b7280;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --radius: 12px;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+      --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --transition: 0.3s ease;
+      --warning: #f59e0b;
+      --warning-light: #fbbf24;
+      --warning-bg: #fef3c7;
+    }
 
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    html, body { height: 100%; }
+    
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--gray-50);
+      color: var(--gray-800);
+      line-height: 1.5;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 100vh;
+      transition: background-color var(--transition), color var(--transition);
+    }
+
+    header {
+      background: white;
+      box-shadow: var(--shadow-sm);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      transition: background-color var(--transition);
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+    }
+
+    nav ul {
+      display: flex;
+      list-style: none;
+      gap: 1.5rem;
+      margin-left: auto;
+    }
+
+    nav a {
+      text-decoration: none;
+      font-weight: 500;
+      color: var(--gray-700);
+      transition: color var(--transition);
+    }
+
+    nav a:hover { color: var(--primary); }
+
+    .theme-toggle { 
+      display: flex; 
+      align-items: center; 
+      gap: 0.5rem; 
+      margin-left: 2rem; 
+    }
+
+    .theme-toggle-label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--gray-600);
+      transition: color var(--transition);
+    }
+
+    .theme-switch { position: relative; width: 48px; height: 24px; }
+    
+    .theme-switch input { opacity: 0; width: 0; height: 0; }
+    
+    .slider {
+      position: absolute; cursor: pointer; inset: 0;
+      background-color: var(--gray-300); 
+      transition: background var(--transition); 
+      border-radius: 34px;
+    }
+    
+    .slider:before {
+      content: ""; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px;
+      background: white; transition: transform var(--transition); border-radius: 50%;
+    }
+    
+    input:checked + .slider { background-color: var(--primary); }
+    
+    input:checked + .slider:before { transform: translateX(24px); }
+    
+    main.container {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 2rem;
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Сайдбар истории */
+    aside.history {
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      padding: 1.5rem;
+      max-height: calc(100vh - 200px);
+      overflow-y: auto;
+      transition: background-color var(--transition), border-color var(--transition);
+      border: 1px solid var(--gray-200);
+    }
+
+    aside.history h2 {
+      font-size: 1.125rem; 
+      margin-bottom: 1rem; 
+      color: var(--dark);
+      font-weight: 600;
+    }
+
+    aside.history .item {
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--gray-200);
+      cursor: pointer;
+      transition: background var(--transition);
+      border-radius: var(--radius);
+      margin-bottom: 0.5rem;
+    }
+
+    aside.history .item:last-child { border-bottom: none; }
+    
+    aside.history .item:hover { 
+      background: var(--gray-100); 
+    }
+
+    /* Основная секция */
+    section.analysis {
+      display: flex; 
+      flex-direction: column; 
+      gap: 1.5rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      font-size: 1.125rem;
+      color: var(--gray-600);
+      margin-bottom: 2rem;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1.25rem;
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      transition: transform var(--transition), background-color var(--transition);
+      border: 1px solid var(--gray-200);
+    }
+
+    .feature-item:hover { 
+      transform: translateY(-4px); 
+      box-shadow: var(--shadow-md);
+    }
+
+    .feature-icon {
+      background: rgba(80,70,229,0.1); 
+      color: var(--primary);
+      width: 3rem; 
+      height: 3rem; 
+      border-radius: 0.75rem;
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .feature-icon i {
+      font-size: 1.35rem;
+    }
+
+    .feature-text h3 { 
+      font-weight: 600;
+      font-size: 1.05rem;
+      margin-bottom: 0.3rem;
+      color: var(--gray-900);
+    }
+
+    .feature-text p { 
+      font-size: 0.9rem;
+      color: var(--gray-600);
+    }
+
+    .card {
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      display: grid;
+      gap: 1rem;
+      border: 1px solid var(--gray-200);
+      transition: background-color var(--transition), border-color var(--transition);
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.6rem;
+      color: var(--gray-700);
+      font-size: 0.9rem;
+      transition: color var(--transition);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 200px;
+      padding: 1rem;
+      border: 1px solid var(--gray-300);
+      border-radius: var(--radius);
+      font-family: var(--font-sans);
+      font-size: 1rem;
+      line-height: 1.6;
+      transition: border-color var(--transition), box-shadow var(--transition), background-color var(--transition);
+      resize: vertical;
+      background-color: var(--gray-50);
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(80, 70, 229, 0.15);
+      background-color: white;
+    }
+
+    .char-counter {
+      text-align: right;
+      font-size: 0.8rem;
+      color: var(--gray-500);
+      margin-top: 0.25rem;
+      padding-right: 0.5rem;
+      transition: color var(--transition);
+    }
+
+    .clear-input-btn {
+      position: absolute;
+      top: 2px;
+      right: 5px;
+      background: none;
+      border: none;
+      color: var(--gray-400);
+      cursor: pointer;
+      font-size: 1.2rem;
+      padding: 0.5rem;
+      line-height: 1;
+      display: none;
+      z-index: 2;
+      transition: color var(--transition);
+    }
+
+    .clear-input-btn:hover {
+      color: var(--gray-600);
+    }
+
+    textarea:not(:placeholder-shown) + .char-counter + .clear-input-btn {
+      display: block;
+    }
+
+    .controls-row {
+      display: flex;
+      gap: 1.5rem;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    .control-group {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    select {
+      padding: 0.8rem 1rem;
+      border: 1px solid var(--gray-300);
+      border-radius: var(--radius);
+      background-color: white;
+      font-size: 0.95rem;
+      font-family: var(--font-sans);
+      width: 100%;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      background-size: 1rem;
+      transition: border-color var(--transition), box-shadow var(--transition), background-color var(--transition), color var(--transition);
+    }
+
+    select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(80, 70, 229, 0.15);
+    }
+
+    .button-container {
+      flex: 0 0 auto;
+      padding-top: 1.45rem;
+    }
+
+    .button {
+      background-color: var(--primary);
+      color: white;
+      font-weight: 600;
+      padding: 0.8rem 1.75rem;
+      border-radius: var(--radius);
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background-color var(--transition), transform 0.1s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      white-space: nowrap;
+    }
+
+    .button:hover {
+      background-color: var(--primary-light);
+    }
+
+    .button:active {
+      transform: translateY(1px);
+      background-color: var(--primary-dark);
+    }
+
+    .button:disabled {
+      background-color: var(--gray-300);
+      cursor: not-allowed;
+      color: var(--gray-500);
+    }
+
+    .button:disabled:hover {
+      background-color: var(--gray-300);
+    }
+
+    .button i {
+      font-size: 1.1rem;
+    }
+
+    .button-secondary {
+      background-color: var(--gray-200);
+      color: var(--gray-700);
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .button-secondary:hover {
+      background-color: var(--gray-300);
+    }
+
+    .button-secondary:active {
+      background-color: var(--gray-400);
+      transform: translateY(1px);
+    }
+
+    .button-secondary i {
+      font-size: 0.9rem;
+      margin-right: 0.4rem;
+    }
+
+    .output-container {
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--gray-200);
+      overflow: hidden;
+      position: relative;
+      transition: background-color var(--transition), border-color var(--transition);
+    }
+
+    .output-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      background: var(--gray-100);
+      border-bottom: 1px solid var(--gray-200);
+      flex-wrap: wrap;
+      gap: 1rem;
+      transition: background-color var(--transition), border-color var(--transition);
+    }
+
+    .output-title {
+      font-weight: 600;
+      color: var(--gray-700);
+      font-size: 1rem;
+      transition: color var(--transition);
+    }
+
+    .output-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .output-content {
+      padding: 1.5rem;
+      min-height: 180px;
+      background: white;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-size: 1rem;
+      line-height: 1.6;
+      position: relative;
+      color: var(--gray-800);
+      transition: background-color var(--transition), color var(--transition);
+    }
+
+    .output-content.loading {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .output-placeholder {
+      color: var(--gray-400);
+      font-style: italic;
+      transition: color var(--transition);
+    }
+
+    .model-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.3rem 0.8rem;
+      background-color: var(--gray-200);
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--gray-600);
+      transition: background-color var(--transition), color var(--transition);
+    }
+
+    .model-chip i {
+      color: var(--secondary);
+      font-size: 0.65rem;
+    }
+
+    .loader {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      color: var(--primary);
+      font-weight: 500;
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 1rem 1.5rem;
+      border-radius: var(--radius);
+      z-index: 10;
+      box-shadow: var(--shadow-md);
+      text-align: center;
+      transition: background-color var(--transition), color var(--transition);
+    }
+
+    .loader i {
+      animation: spin 1.2s infinite linear;
+      font-size: 1.25rem;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Тост уведомления */
+    .toast {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      background: var(--dark);
+      color: white;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius);
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all var(--transition);
+      pointer-events: none;
+      z-index: 1001;
+      box-shadow: var(--shadow-md);
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    /* AI Double Check™ */
+    .qa-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.3rem 0.8rem;
+      background-color: var(--secondary);
+      color: white;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      transition: background-color var(--transition);
+    }
+
+    .qa-badge.warning {
+      background-color: var(--warning);
+    }
+
+    .qa-badge i {
+      font-size: 0.7rem;
+    }
+
+    .qa-warning-box {
+      background-color: var(--warning-bg);
+      border: 1px solid var(--warning-light);
+      border-radius: var(--radius);
+      padding: 0.75rem 1rem;
+      margin-top: 1rem;
+      display: none;
+      color: var(--gray-800);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .qa-warning-box i {
+      color: var(--warning);
+      margin-right: 0.5rem;
+    }
+
+    .qa-warning-box.show {
+      display: block;
+    }
+
+    body.dark-mode .qa-warning-box {
+      background-color: rgba(245, 158, 11, 0.15);
+      border-color: var(--warning);
+      color: var(--gray-200);
+    }
+
+    /* Адаптив */
+    @media (max-width: 1024px) {
+      main.container {
+        grid-template-columns: 1fr;
+      }
+      aside.history {
+        grid-row: 1;
+        max-height: none;
+        margin-bottom: 2rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .controls-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+      }
+      .button-container {
+        width: 100%;
+        padding-top: 0;
+      }
+      .button {
+        width: 100%;
+      }
+      header {
+        flex-wrap: wrap;
+        padding: 1rem;
+      }
+      .theme-toggle {
+        margin-left: auto;
+      }
+      nav ul {
+        flex-wrap: wrap;
+      }
+    }
+
+    /* Темная тема ибо куда ж без нее */
+    body.dark-mode {
+      background-color: var(--dark);
+      color: var(--gray-200);
+    }
+
+    body.dark-mode header {
+      background-color: var(--gray-800);
+      border-bottom: 1px solid var(--gray-700);
+    }
+
+    body.dark-mode .logo {
+      color: var(--primary-light);
+    }
+
+    body.dark-mode nav a {
+      color: var(--gray-300);
+    }
+
+    body.dark-mode nav a:hover {
+      color: var(--primary-light);
+    }
+
+    body.dark-mode .theme-toggle-label {
+      color: var(--gray-400);
+    }
+
+    body.dark-mode h1 {
+      color: white;
+    }
+
+    body.dark-mode .subtitle {
+      color: var(--gray-400);
+    }
+
+    body.dark-mode .card,
+    body.dark-mode .feature-item,
+    body.dark-mode .output-container,
+    body.dark-mode aside.history {
+      background-color: var(--gray-800);
+      border-color: var(--gray-700);
+    }
+
+    body.dark-mode .feature-text h3 {
+      color: var(--gray-100);
+    }
+
+    body.dark-mode .feature-text p {
+      color: var(--gray-400);
+    }
+
+    body.dark-mode label {
+      color: var(--gray-300);
+    }
+
+    body.dark-mode .char-counter {
+      color: var(--gray-500);
+    }
+
+    body.dark-mode .clear-input-btn {
+      color: var(--gray-500);
+    }
+
+    body.dark-mode .clear-input-btn:hover {
+      color: var(--gray-300);
+    }
+
+    body.dark-mode textarea,
+    body.dark-mode select {
+      background-color: var(--gray-900);
+      border-color: var(--gray-600);
+      color: var(--gray-200);
+    }
+
+    body.dark-mode textarea::placeholder {
+      color: var(--gray-500);
+    }
+
+    body.dark-mode select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
+    }
+
+    body.dark-mode textarea:focus,
+    body.dark-mode select:focus {
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px rgba(110, 102, 255, 0.2);
+      background-color: var(--gray-800);
+    }
+
+    body.dark-mode .button:disabled {
+      background-color: var(--gray-600);
+      color: var(--gray-400);
+    }
+
+    body.dark-mode .button:disabled:hover {
+      background-color: var(--gray-600);
+    }
+
+    body.dark-mode .button-secondary {
+      background-color: var(--gray-600);
+      color: var(--gray-200);
+    }
+
+    body.dark-mode .button-secondary:hover {
+      background-color: var(--gray-500);
+    }
+
+    body.dark-mode .button-secondary:active {
+      background-color: var(--gray-400);
+    }
+
+    body.dark-mode .output-header {
+      background-color: var(--gray-900);
+      border-color: var(--gray-700);
+    }
+
+    body.dark-mode .output-title {
+      color: var(--gray-300);
+    }
+
+    body.dark-mode .output-content {
+      background-color: var(--gray-800);
+      color: var(--gray-200);
+    }
+
+    body.dark-mode .output-placeholder {
+      color: var(--gray-500);
+    }
+
+    body.dark-mode .loader {
+      background-color: rgba(31, 41, 55, 0.85);
+      color: var(--primary-light);
+    }
+
+    body.dark-mode .model-chip {
+      background-color: var(--gray-700);
+      color: var(--gray-200);
+    }
+
+    body.dark-mode .model-chip i {
+      color: var(--secondary-light);
+    }
+
+    body.dark-mode aside.history h2 {
+      color: var(--gray-200);
+    }
+
+    body.dark-mode aside.history .item {
+      border-color: var(--gray-700);
+    }
+
+    body.dark-mode aside.history .item:hover {
+      background-color: var(--gray-700);
+    }
+
+    body.dark-mode .toast {
+      background: var(--gray-700);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="#" class="logo">
+      <i class="fas fa-robot"></i>
+      ТекстАИ 2.0
+    </a>
+    <nav>
+      <ul>
+        <li><a href="#">Главная</a></li>
+        <li><a href="#" id="aboutProjectLink">О проекте</a></li>
+        <li><a href="https://t.me/arsenie_slumerican" target="_blank">Контакты</a></li>
+      </ul>
+    </nav>
+    <div class="theme-toggle">
+      <span class="theme-toggle-label" id="themeToggleLabel">Тёмная тема</span>
+      <label class="theme-switch">
+        <input type="checkbox" id="darkModeToggle" aria-labelledby="themeToggleLabel">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </header>
+  
+  <!-- Модальное окно о проекте и обо мне  -->
+  <div id="aboutProjectModal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal">&times;</span>
+      <h2>О проекте ТекстАИ</h2>
+      <p>ТекстАИ 2.0 — это шоукейс реального продукта, которому нет аналогов на российском рынке на таком уровне качества и функциональности.</p>
+      <p>В отличие от конкурентов, таких как TextRu, Advego, eTXT и других текстовых анализаторов, ТекстАИ использует передовые модели искусственного интеллекта для глубокого анализа текста, предоставляя не только проверку грамматики, но и стилистические улучшения, извлечение ключевых идей и анализ тональности.</p>
+      <p>Проект создан благодаря огромному количеству крайне добрых людей и особенно LLM7.io by Eugene Evstafev</p>
+    </div>
+  </div>
+  
+  <style>
+  /* Стили для модального окна */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+    backdrop-filter: blur(5px);
+  }
+  
+  .modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 2rem;
+    border-radius: var(--radius);
+    max-width: 600px;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    transition: background-color var(--transition);
+  }
+  
+  .dark-mode .modal-content {
+    background-color: var(--gray-800);
+    color: var(--gray-200);
+  }
+  
+  .close-modal {
+    position: absolute;
+    top: 1rem;
+    right: 1.5rem;
+    color: var(--gray-500);
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color var(--transition);
+  }
+  
+  .close-modal:hover {
+    color: var(--primary);
+  }
+  </style>
+
+  <main class="container">
+    <section class="analysis">
+      <h1>Продвинутый анализ и исправление текста</h1>
+      <p class="subtitle">Используйте мощь ИИ для грамматики, стиля, тона и рекомендаций.</p>
+
+      <div class="features">
+        <div class="feature-item">
+          <div class="feature-icon"><i class="fas fa-spell-check"></i></div>
+          <div class="feature-text">
+            <h3>Грамматика</h3>
+            <p>Мгновенное исправление ошибок и опечаток.</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon"><i class="fas fa-pencil-alt"></i></div>
+          <div class="feature-text">
+            <h3>Стиль и тон</h3>
+            <p>Настройка стиля: формальный, дружелюбный, креативный.</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon"><i class="fas fa-history"></i></div>
+          <div class="feature-text">
+            <h3>История</h3>
+            <p>Просмотр последних анализов и быстрый доступ.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="form-group">
+          <label for="inputText">Текст для анализа</label>
+          <textarea id="inputText" placeholder="Напишите или вставьте текст..."></textarea>
+          <div class="char-counter" id="charCounter">0 / 5000 символов</div>
+          <button class="clear-input-btn" id="clearInputBtn" title="Очистить поле ввода" aria-label="Очистить поле ввода">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <div class="controls-row">
+          <div class="control-group">
+            <label for="analysisTask">Задача анализа</label>
+            <select id="analysisTask">
+              <option value="correct">Коррекция и улучшение стиля</option>
+              <option value="summarize">Суммаризация</option>
+              <option value="keywords">Извлечение ключевых слов</option>
+              <option value="sentiment">Анализ тональности</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="modelSelect">Модель ИИ</label>
+            <select id="modelSelect">
+              <option value="gpt-4o">GPT-4o (Рекомендуется)</option>
+              <option value="gpt-4o-mini-2024-07-18">GPT-4o Mini</option>
+              <option value="gemini-1.5-pro-latest">Gemini 1.5 Pro</option>
+              <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash</option>
+              <option value="mistral-large-latest">Mistral Large</option>
+              <option value="mistral-small-2503">Mistral Small</option>
+              <option value="phi-4">Phi-4</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="toneSelect">Тон текста</label>
+            <select id="toneSelect">
+              <option value="neutral">Нейтральный</option>
+              <option value="formal">Формальный</option>
+              <option value="casual">Дружелюбный</option>
+              <option value="creative">Креативный</option>
+            </select>
+          </div>
+
+          <div class="button-container">
+            <button id="analyzeBtn" class="button">
+              <i class="fas fa-cogs"></i>
+              Анализировать
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="output-container">
+        <div class="output-header">
+          <span class="output-title">Результаты анализа</span>
+          <div class="output-controls">
+            <div class="model-chip">
+              <i class="fas fa-circle"></i>
+              <span id="usedModel">Модель не выбрана</span>
+            </div>
+            <div id="qaBadge" class="qa-badge" style="display: none;">
+              <i class="fas fa-check-double"></i>
+              <span id="qaBadgeText">AI Double Check™</span>
+            </div>
+            <button id="copyOutputBtn" class="button button-secondary">
+              <i class="far fa-copy"></i><span class="copy-btn-text">Копировать</span>
+            </button>
+          </div>
+        </div>
+        <div class="loader" id="loader">
+          <i class="fas fa-spinner"></i>
+          Обработка...
+        </div>
+        <div class="output-content" id="output">
+          <span class="output-placeholder">Результаты анализа появятся здесь после обработки вашего текста.</span>
+        </div>
+        <div id="qaWarningBox" class="qa-warning-box">
+          <i class="fas fa-exclamation-triangle"></i>
+          <span id="qaWarningText"></span>
+        </div>
+      </div>
+    </section>
+
+    <aside class="history">
+      <h2>История анализов</h2>
+      <div id="historyList"></div>
+    </aside>
+  </main>
+
+  <div class="toast" id="toast">Скопировано в буфер обмена!</div>
+
+  <script>
+    // --- DOM  ---
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const body = document.body;
+    const themeLabel = document.getElementById('themeToggleLabel');
+    const inputText = document.getElementById('inputText');
+    const output = document.getElementById('output');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const modelSelect = document.getElementById('modelSelect');
+    const taskSelect = document.getElementById('analysisTask');
+    const toneSelect = document.getElementById('toneSelect');
+    const loader = document.getElementById('loader');
+    const usedModel = document.getElementById('usedModel');
+    const charCounter = document.getElementById('charCounter');
+    const clearInputBtn = document.getElementById('clearInputBtn');
+    const copyOutputBtn = document.getElementById('copyOutputBtn');
+    const copyBtnText = copyOutputBtn.querySelector('.copy-btn-text');
+    const outputContent = document.getElementById('output');
+    const outputPlaceholder = output.querySelector('.output-placeholder');
+    const historyList = document.getElementById('historyList');
+    const toast = document.getElementById('toast');
+    const qaBadge = document.getElementById('qaBadge');
+    const qaBadgeText = document.getElementById('qaBadgeText');
+    const qaWarningBox = document.getElementById('qaWarningBox');
+    const qaWarningText = document.getElementById('qaWarningText');
+
+    // --- константы ---
+    const MAX_CHARS = 5000;
+    const API_ENDPOINT = "https://api.llm7.io/v1/chat/completions";
+
+    // --- функции ---
+
+    // опять же (dark/light)
+    function setTheme(isDark) {
+      if (isDark) {
+        body.classList.add('dark-mode');
+        themeLabel.textContent = 'Светлая тема';
+        localStorage.setItem('darkMode', 'enabled');
+      } else {
+        body.classList.remove('dark-mode');
+        themeLabel.textContent = 'Тёмная тема';
+        localStorage.setItem('darkMode', 'disabled');
+      }
+    }
+
+    // считаем символы 
+    function updateCharCount() {
+      const currentLength = inputText.value.length;
+      charCounter.textContent = `${currentLength} / ${MAX_CHARS} символов`;
+      if (currentLength > MAX_CHARS) {
+        charCounter.style.color = 'red';
+        analyzeBtn.disabled = true;
+      } else {
+        charCounter.style.color = body.classList.contains('dark-mode') ? 'var(--gray-500)' : 'var(--gray-500)';
+        analyzeBtn.disabled = false;
+      }
+
+      // Show/hide 
+      clearInputBtn.style.display = currentLength > 0 ? 'block' : 'none';
+    }
+
+    // Чистилка для текста 
+    function clearInput() {
+      inputText.value = '';
+      updateCharCount();
+      inputText.focus();
+    }
+
+    // Копировать текст но проблема что при некоторых настройках она тупо не работает при некоторых расширениях и тд. Лучше открыть в другом браузере, она правда работает 
+    async function copyOutput() {
+      if (!output.textContent || output.contains(outputPlaceholder)) {
+        copyBtnText.textContent = 'Нечего копировать';
+        setTimeout(() => { copyBtnText.textContent = 'Копировать'; }, 2000);
+        return;
+      }
+      
+      const textToCopy = outputPlaceholder ? output.textContent.replace(outputPlaceholder.textContent, '').trim() : output.textContent.trim();
+
+      if (!textToCopy) return;
+
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+        showToast('Скопировано!');
+        copyBtnText.textContent = 'Скопировано!';
+        setTimeout(() => {
+          copyBtnText.textContent = 'Копировать';
+        }, 2000);
+      } catch (err) {
+        showToast('Ошибка копирования');
+        copyBtnText.textContent = 'Ошибка копирования';
+        console.error('Ошибка копирования: ', err);
+        setTimeout(() => { copyBtnText.textContent = 'Копировать'; }, 2000);
+      }
+    }
+
+    // Показываем тосты 
+    function showToast(msg) {
+      toast.innerText = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // промпты для тасков
+    function getSystemPrompt(task, tone) {
+      let basePrompt = "";
+      
+      switch (task) {
+        case 'correct':
+          basePrompt = "Ты - высококвалифицированный ассистент по русскому языку. Твоя задача - исправить грамматические, орфографические и пунктуационные ошибки в предоставленном тексте. Улучши стиль и ясность изложения, сохранив оригинальный смысл. Предложи исправления и краткие пояснения, если они уместны. Форматируй ответ для лучшей читаемости.";
+          break;
+        case 'summarize':
+          basePrompt = "Ты - ИИ-ассистент, специализирующийся на суммаризации текстов. Создай краткое, но исчерпывающее резюме предоставленного текста на русском языке. Выдели основные идеи и ключевые моменты. Длина резюме должна быть значительно меньше оригинала.";
+          break;
+        case 'keywords':
+          basePrompt = "Ты - ИИ-анализатор текста. Извлеки основные ключевые слова и фразы из предоставленного текста на русском языке. Представь их в виде списка, разделенного запятыми или нумерованного списка.";
+          break;
+        case 'sentiment':
+          basePrompt = "Ты - ИИ для анализа тональности текста. Определи общую тональность (позитивная, негативная, нейтральная) предоставленного текста на русском языке. Кратко обоснуй свой вывод, указав на слова или фразы, повлиявшие на твою оценку.";
+          break;
+        default:
+          basePrompt = "Ты - полезный ИИ-ассистент. Обработай предоставленный текст.";
+      }
+      
+      // Добавляем информацию о желаемом тоне
+      let tonePrompt = "";
+      switch (tone) {
+        case 'formal':
+          tonePrompt = " Используй формальный, академический стиль речи.";
+          break;
+        case 'casual':
+          tonePrompt = " Используй дружелюбный, разговорный стиль речи.";
+          break;
+        case 'creative':
+          tonePrompt = " Используй креативный, выразительный стиль речи с интересными оборотами.";
+          break;
+        default: // можно как-то исправить но наверное исчерпывающе
+          tonePrompt = " Используй нейтральный, сбалансированный стиль речи.";
+      }
+      
+      return basePrompt + tonePrompt;
+    }
+
+    // ошибки 
+    function displayOutput(text, isError = false, isLoading = false) {
+      if (isLoading) {
+        loader.style.display = 'flex';
+        outputContent.classList.add('loading');
+        output.innerHTML = '';
+        const loadingText = document.createElement('span');
+        loadingText.textContent = 'Загрузка результатов...';
+        loadingText.style.color = 'var(--gray-400)';
+        output.appendChild(loadingText);
+        copyOutputBtn.disabled = true;
+      } else {
+        loader.style.display = 'none';
+        outputContent.classList.remove('loading');
+        output.innerHTML = '';
+        
+        if (text) {
+          const cleanedText = text
+    .replace(/\*\*(.*?)\*\*/g, '$1')       // Убирает **жирный**
+    .replace(/\*(.*?)\*/g, '$1')           // Убирает *курсив*
+    .replace(/^\d+\.\s+/gm, '')            // Убирает нумерацию списков 
+    .replace(/^- /gm, '')                 // Убирает маркеры списков 
+    .replace(/(Исследуйте решения|Explore AI-based)[\s\S]*?\(https?:\/\/[^\)]+\)/gi, '');
+
+  output.innerText = cleanedText;
+  copyOutputBtn.disabled = false;
+        } else {
+          const placeholder = document.createElement('span');
+          placeholder.className = 'output-placeholder';
+          placeholder.textContent = 'Результаты анализа появятся здесь после обработки вашего текста.';
+          output.appendChild(placeholder);
+          copyOutputBtn.disabled = true;
+        }
+      }
+
+      if (isError) {
+        output.style.color = 'red';
+        copyOutputBtn.disabled = true;
+      } else {
+        output.style.color = body.classList.contains('dark-mode') ? 'var(--gray-200)' : 'var(--gray-800)';
+      }
+    }
+
+    // И по локал памяти история
+    function loadHistory() {
+      const history = JSON.parse(localStorage.getItem('textAI_history') || '[]');
+      historyList.innerHTML = '';
+      
+      history.slice().reverse().forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.innerHTML = `
+          <div style="font-weight: 500; margin-bottom: 0.25rem;">
+            ${new Date(item.time).toLocaleString('ru')}
+          </div>
+          <div style="font-size: 0.9rem; color: var(--gray-600);">
+            ${item.input.slice(0, 50)}${item.input.length > 50 ? '...' : ''}
+          </div>
+        `;
+        
+        div.addEventListener('click', () => {
+          inputText.value = item.input;
+          displayOutput(item.output);
+          updateCharCount();
+          
+          // апдейтим
+          if (item.model) modelSelect.value = item.model;
+          if (item.task) taskSelect.value = item.task;
+          if (item.tone) toneSelect.value = item.tone;
+          
+          // апдейтим модель 
+          const modelName = modelSelect.options[modelSelect.selectedIndex].text;
+          usedModel.innerText = modelName;
+        });
+        
+        historyList.appendChild(div);
+      });
+      
+      // если пустая итсория то будет оно
+      if (history.length === 0) {
+        const emptyState = document.createElement('div');
+        emptyState.style.textAlign = 'center';
+        emptyState.style.padding = '1rem';
+        emptyState.style.color = 'var(--gray-500)';
+        emptyState.innerHTML = `
+          <i class="fas fa-history" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+          <p>История пуста</p>
+          <p style="font-size: 0.8rem; margin-top: 0.5rem;">Результаты анализа будут сохраняться здесь</p>
+        `;
+        historyList.appendChild(emptyState);
+      }
+    }
+
+    // AI Double Check™ - да не трейдмарк но зато как выглядит, прям на уровне прода
+    async function performAIQualityCheck(originalText, resultText, selectedModel) {
+      try {
+        const qaResponse = await fetch(API_ENDPOINT, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: selectedModel,
+            messages: [
+              { 
+                role: "system", 
+                content: "Ты — AI-ревизор. Твоя задача — проверить, были ли искажены смысл или тон оригинального текста после правок. Если всё сохранено корректно, ответь ровно 'ОК'. Если есть искажения или потеря смысла, укажи конкретно, что было искажено." 
+              },
+              { 
+                role: "user", 
+                content: `Оригинал: ${originalText}\n\nРезультат: ${resultText}` 
+              }
+            ],
+            temperature: 0.2,
+            max_tokens: 256
+          })
+        });
+
+        if (!qaResponse.ok) {
+          throw new Error(`QA Check failed: ${qaResponse.status}`);
+        }
+
+        const qaData = await qaResponse.json();
+        const qaCheck = qaData.choices?.[0]?.message?.content?.trim();
+        
+        return qaCheck;
+      } catch (error) {
+        console.error('AI Quality Check error:', error);
+        return null;
+      }
+    }
+
+    // аналищ всея
+    async function analyzeText() {
+      const inputTextValue = inputText.value.trim();
+      const selectedModel = modelSelect.value;
+      const selectedTask = taskSelect.value;
+      const selectedTone = toneSelect.value;
+
+      if (!inputTextValue) {
+        displayOutput("Пожалуйста, введите текст для анализа.", true);
+        return;
+      }
+      
+      if (inputTextValue.length > MAX_CHARS) {
+        displayOutput(`Превышен лимит символов (${MAX_CHARS}). Пожалуйста, сократите текст.`, true);
+        return;
+      }
+
+      analyzeBtn.disabled = true;
+      analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Анализ...';
+      displayOutput('', false, true);
+      
+      // прятать QA при загрузке
+      qaBadge.style.display = 'none';
+      qaWarningBox.classList.remove('show');
+
+      // апдейт модели сразу 
+      const modelName = modelSelect.options[modelSelect.selectedIndex].text;
+      usedModel.innerText = modelName;
+
+      const systemPrompt = getSystemPrompt(selectedTask, selectedTone);
+
+      try {
+        const response = await fetch(API_ENDPOINT, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: selectedModel,
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: inputTextValue }
+            ],
+            max_tokens: 1024,
+            temperature: 0.6
+          })
+        });
+
+        if (!response.ok) {
+          let errorMsg = `Ошибка сети: ${response.status} ${response.statusText}`;
+          try {
+            const errorData = await response.json();
+            errorMsg += `\nДетали: ${JSON.stringify(errorData.error?.message || errorData, null, 2)}`;
+          } catch (parseError) {
+            const textError = await response.text();
+            errorMsg += `\nОтвет сервера: ${textError}`;
+          }
+          throw new Error(errorMsg);
+        }
+
+        const data = await response.json();
+
+        if (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+          const resultText = data.choices[0].message.content.trim();
+          displayOutput(resultText);
+          
+          // ЮЗ AI Double Check™ пусть высвечивается ТОЛЬКО для главной функции так как иначе перегруз мне кажется будет у любого кто полезет разбираться плюс это мейн функция и она дефолтная, не факт что остальные вообще нужны будут
+          if (selectedTask === 'correct') {
+            loader.style.display = 'flex';
+            loader.innerHTML = '<i class="fas fa-spinner fa-spin"></i> AI Double Check™...';
+            
+            const qaResult = await performAIQualityCheck(inputTextValue, resultText, selectedModel);
+            
+            loader.style.display = 'none';
+            
+            if (qaResult) {
+              qaBadge.style.display = 'inline-flex';
+              
+              if (qaResult.toLowerCase() === 'ок') {
+                qaBadge.classList.remove('warning');
+                qaBadgeText.textContent = 'AI Double Check™ ✓';
+              } else {
+                qaBadge.classList.add('warning');
+                qaBadgeText.textContent = 'AI Double Check™ ⚠️';
+                qaWarningBox.classList.add('show');
+                qaWarningText.textContent = qaResult;
+                
+                // тосты с предостережением 
+                showToast('⚠️ Внимание: обнаружены возможные искажения смысла');
+              }
+            }
+          }
+          
+          // Сохранение в историю
+          const history = JSON.parse(localStorage.getItem('textAI_history') || '[]');
+          history.push({
+            time: Date.now(),
+            input: inputTextValue,
+            output: resultText,
+            model: selectedModel,
+            task: selectedTask,
+            tone: selectedTone
+          });
+          
+          // Ограничиваем историю до 20 записей тоже иначе перегруз инфой на странице
+          if (history.length > 20) history.shift();
+          
+          localStorage.setItem('textAI_history', JSON.stringify(history));
+          loadHistory();
+        } else {
+          console.warn("Неожиданный формат ответа:", data);
+          displayOutput("Получен пустой или некорректный ответ от сервера.", true);
+        }
+      } catch (error) {
+        console.error("Ошибка при вызове API:", error);
+        displayOutput(`Произошла ошибка: ${error.message}\n\nПожалуйста, проверьте консоль для деталей и попробуйте снова.`, true);
+      } finally {
+        analyzeBtn.disabled = false;
+        analyzeBtn.innerHTML = '<i class="fas fa-cogs"></i> Анализировать';
+        loader.style.display = 'none';
+        outputContent.classList.remove('loading');
+      }
+    }
+
+    // --- Event Listeners ---
+
+    // Темная тема тоггл 
+    darkModeToggle.addEventListener('change', () => {
+      setTheme(darkModeToggle.checked);
+    });
+
+    // Анализ кнопка клик
+    analyzeBtn.addEventListener('click', analyzeText);
+
+    // Текст Input (Ctrl+Enter)
+    inputText.addEventListener('input', updateCharCount);
+    inputText.addEventListener("keydown", function(e) {
+      // Check for Ctrl+Enter (Windows/Linux) или Cmd+Enter (Mac)
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        analyzeText();
+      }
+    });
+
+    // Очистка Input 
+    clearInputBtn.addEventListener('click', clearInput);
+
+    // Копировать Output кнопка
+    copyOutputBtn.addEventListener('click', copyOutput);
+    
+    // Модальное окно О проекте
+    const aboutProjectLink = document.getElementById('aboutProjectLink');
+    const aboutProjectModal = document.getElementById('aboutProjectModal');
+    const closeModal = document.querySelector('.close-modal');
+    
+    aboutProjectLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      aboutProjectModal.style.display = 'block';
+    });
+    
+    closeModal.addEventListener('click', () => {
+      aboutProjectModal.style.display = 'none';
+    });
+    
+    window.addEventListener('click', (e) => {
+      if (e.target == aboutProjectModal) {
+        aboutProjectModal.style.display = 'none';
+      }
+    });
+
+    // --- стартуем ---
+
+    // Это вообще не ясно работает ли но должно проверка на преференсы по теме 
+    const savedTheme = localStorage.getItem('darkMode');
+    if (savedTheme === 'enabled') {
+      darkModeToggle.checked = true;
+      setTheme(true);
+    } else {
+      setTheme(false);
+    }
+
+    // считаем 
+    updateCharCount();
+
+    // плейсхолдер
+    displayOutput(null);
+
+    // загрузка истории 
+    loadHistory();
+  </script>
+</body>
+</html>
